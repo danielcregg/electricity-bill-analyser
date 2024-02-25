@@ -36,14 +36,14 @@
             // Parse CSV lines into array of objects
             const lines = csv.split('\n').slice(1); // Remove header line
             const data = lines.map(line => {
-                const [mprn, meterSerialNumber, readValue, readType, readDateTime] = line.split('\t');
+                const [mprn, meterSerialNumber, readValue, readType, readDateTime] = line.split(',');
                 return { mprn, meterSerialNumber, readValue: parseFloat(readValue), readDateTime: new Date(readDateTime) };
             });
 
             // Calculate average daily usage
             const dailyUsage = {};
             data.forEach(entry => {
-                const date = entry.readDateTime.toDateString();
+                const date = entry.readDateTime.toLocaleDateString(); // Display date in human-readable format
                 if (!dailyUsage[date]) {
                     dailyUsage[date] = 0;
                 }
@@ -60,12 +60,12 @@
             let maxUsage = -Infinity;
             let minUsage = Infinity;
             for (const date in dailyUsage) {
-                const usage = parseFloat(dailyUsage[date]); // Ensure value is a number before comparison
-                if (!isNaN(usage) && usage > maxUsage) {
+                const usage = dailyUsage[date];
+                if (usage > maxUsage) {
                     maxUsage = usage;
                     maxDate = date;
                 }
-                if (!isNaN(usage) && usage < minUsage) {
+                if (usage < minUsage) {
                     minUsage = usage;
                     minDate = date;
                 }
