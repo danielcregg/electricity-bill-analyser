@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Analyzer</title>
+</head>
+<body>
+    <h1>CSV Analyzer</h1>
+    
+    <!-- Form for uploading CSV file -->
+    <form id="csv-form" enctype="multipart/form-data">
+        <input type="file" id="csv-file" accept=".csv" required>
+        <button type="submit">Upload CSV</button>
+    </form>
+
+    <!-- Container for displaying analysis results -->
+    <div id="results-container"></div>
+
+    <script>
+        document.getElementById('csv-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const fileInput = document.getElementById('csv-file');
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(event) {
+                const csv = event.target.result;
+                // Call function to analyze CSV data
+                const analysisResult = analyzeCSV(csv);
+                displayResults(analysisResult);
+            };
+
+            reader.readAsText(file);
+        });
+
+        function analyzeCSV(csv) {
+            // Perform analysis on CSV data here
+            // Example: Calculate total rows and columns
+            const rows = csv.split('\n');
+            const rowCount = rows.length;
+            const columns = rows[0].split(',').length;
+            return { rowCount, columns };
+        }
+
+        function displayResults(analysisResult) {
+            const resultsContainer = document.getElementById('results-container');
+            resultsContainer.innerHTML = `
+                <h2>Analysis Results</h2>
+                <p>Total Rows: ${analysisResult.rowCount}</p>
+                <p>Total Columns: ${analysisResult.columns}</p>
+            `;
+        }
+    </script>
+</body>
+</html>
