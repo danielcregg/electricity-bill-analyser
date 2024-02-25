@@ -8,13 +8,11 @@
 <body>
     <h1>Electricity Usage Analyzer</h1>
     
-    <!-- Form for uploading CSV file -->
     <form id="csv-form" enctype="multipart/form-data">
         <input type="file" id="csv-file" accept=".csv" required>
         <button type="submit">Upload CSV</button>
     </form>
 
-    <!-- Container for displaying analysis results -->
     <div id="results-container"></div>
 
     <script>
@@ -49,7 +47,11 @@
                 if (!dailyUsage[date]) {
                     dailyUsage[date] = 0;
                 }
-                dailyUsage[date] += entry.readValue;
+
+                const readValue = parseFloat(entry.readValue); // Attempt to convert readValue to number
+                if (!isNaN(readValue)) { // Check if conversion was successful
+                    dailyUsage[date] += readValue;
+                }
             });
 
             // Find date with highest and lowest consumption
@@ -58,14 +60,20 @@
             let maxUsage = -Infinity;
             let minUsage = Infinity;
             for (const date in dailyUsage) {
-                if (dailyUsage[date] > maxUsage) {
-                    maxUsage = dailyUsage[date];
+                const usage = parseFloat(dailyUsage[date]); // Ensure value is a number before comparison
+                if (!isNaN(usage) && usage > maxUsage) {
+                    maxUsage = usage;
                     maxDate = date;
                 }
-                if (dailyUsage[date] < minUsage) {
-                    minUsage = dailyUsage[date];
+                if (!isNaN(usage) && usage < minUsage) {
+                    minUsage = usage;
                     minDate = date;
                 }
+            }
+
+            // Handle empty dailyUsage scenario (e.g., display a message)
+            if (Object.keys(dailyUsage).length === 0) {
+                return { averageDailyUsage: null, maxDate: null, maxUsage: null, minDate: null, minUsage: null };
             }
 
             const totalDays = Object.keys(dailyUsage).length;
@@ -76,12 +84,16 @@
 
         function displayResults(analysisResult) {
             const resultsContainer = document.getElementById('results-container');
-            resultsContainer.innerHTML = `
-                <h2>Analysis Results</h2>
-                <p>Average Daily Usage: ${analysisResult.averageDailyUsage.toFixed(2)} kWh</p>
-                <p>Date with Highest Consumption: ${analysisResult.maxDate} (${analysisResult.maxUsage.toFixed(2)} kWh)</p>
-                <p>Date with Lowest Consumption: ${analysisResult.minDate} (${analysisResult.minUsage.toFixed(2)} kWh)</p>
-            `;
+            if (analysisResult.averageDailyUsage === null) {
+                resultsContainer.innerHTML = `<p>No valid data found in the uploaded CSV file.</p>`;
+            } else {
+                resultsContainer.innerHTML = `
+                    <h2>Analysis Results</h2>
+                    <p>Average Daily Usage: ${analysisResult.averageDailyUsage.toFixed(2)} kWh</p>
+                    <p>Date with Highest Consumption: ${analysisResult.maxDate} (${analysisResult.maxUsage.toFixed(2)} kWh)</p>
+                    <p>Date with Lowest Consumption: ${analysisResult.minDate} (${analysisResult.minUsage.toFixed(2)} kWh)</p>
+                `;
+            }
         }
     </script>
 </body>
