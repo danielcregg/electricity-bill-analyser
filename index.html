@@ -7,7 +7,7 @@
 </head>
 <body>
     <h1>Electricity Usage Analyzer</h1>
-    
+
     <form id="csv-form" enctype="multipart/form-data">
         <input type="file" id="csv-file" accept=".csv" required>
         <button type="submit">Upload CSV</button>
@@ -24,7 +24,6 @@
 
             reader.onload = function(event) {
                 const csv = event.target.result;
-                // Call function to analyze CSV data
                 const analysisResult = analyzeCSV(csv);
                 displayResults(analysisResult);
             };
@@ -33,28 +32,26 @@
         });
 
         function analyzeCSV(csv) {
-            // Parse CSV lines into array of objects
-            const lines = csv.split('\n').slice(1); // Remove header line
+            const lines = csv.split('\n').slice(1); 
             const data = lines.map(line => {
                 const [mprn, meterSerialNumber, readValue, readType, readDateTime] = line.split(',');
-                return { mprn, meterSerialNumber, readValue: parseFloat(readValue), readDateTime: new Date(readDateTime) };
+                const [date, time] = readDateTime.split(' '); 
+
+                return { mprn, meterSerialNumber, readValue: parseFloat(readValue), date, time }; 
             });
 
-            // Calculate average daily usage
             const dailyUsage = {};
             data.forEach(entry => {
-                const date = entry.readDateTime.toLocaleDateString(); // Display date in human-readable format
+                const date = entry.date;   
                 if (!dailyUsage[date]) {
                     dailyUsage[date] = 0;
                 }
-
-                const readValue = parseFloat(entry.readValue); // Attempt to convert readValue to number
-                if (!isNaN(readValue)) { // Check if conversion was successful
-                    dailyUsage[date] += readValue;
+                const readValue = parseFloat(entry.readValue); 
+                if (!isNaN(readValue)) { 
+                    dailyUsage[date] += readValue; 
                 }
             });
 
-            // Find date with highest and lowest consumption
             let maxDate = null;
             let minDate = null;
             let maxUsage = -Infinity;
@@ -71,7 +68,6 @@
                 }
             }
 
-            // Handle empty dailyUsage scenario (e.g., display a message)
             if (Object.keys(dailyUsage).length === 0) {
                 return { averageDailyUsage: null, maxDate: null, maxUsage: null, minDate: null, minUsage: null };
             }
