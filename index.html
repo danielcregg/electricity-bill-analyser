@@ -3,63 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Energy Usage</title>
+    <title>Electricity Usage Analyzer</title>
 </head>
 <body>
-    <h1>Energy Usage</h1>
-    <input type="file" id="fileInput">
-    <button onclick="readFile()">Upload CSV</button>
-    <br>
-    <div id="chartContainer"></div>
+    <h1>Electricity Usage Analyzer</h1>
+    
+    <form id="csv-form" enctype="multipart/form-data">
+        <input type="file" id="csv-file" accept=".csv" required>
+        <button type="submit">Upload CSV</button>
+    </form>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <div id="results-container"></div>
+
     <script>
-        function readFile() {
-            const fileInput = document.getElementById('fileInput');
-            const chartContainer = document.getElementById('chartContainer');
-
+        document.getElementById('csv-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const fileInput = document.getElementById('csv-file');
+            const file = fileInput.files[0];
             const reader = new FileReader();
 
-            reader.onload = function(e) {
-                const data = e.target.result;
-                const lines = data.split('\n');
-                const timestamps = [];
-                const usages = [];
-
-                for (let i = 1; i < lines.length; i++) {
-                    const [timestamp, , usage] = lines[i].split(',');
-                    timestamps.push(timestamp);
-                    usages.push(parseFloat(usage));
-                }
-
-                const chartData = {
-                    labels: timestamps,
-                    datasets: [{
-                        label: 'Energy Usage (kW)',
-                        data: usages,
-                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        borderWidth: 1
-                    }]
-                };
-
-                const ctx = chartContainer.getContext('2d');
-                const chart = new Chart(ctx, {
-                    type: 'line',
-                    data: chartData,
-                    options: {
-                        scales: {
-                            yAxes: [{
-                                ticks: {
-                                    beginAtZero: true
-                                }
-                            }]
-                        }
-                    }
-                });
+            reader.onload = function(event) {
+                const csv = event.target.result;
+                // Call function to analyze CSV data
+                const analysisResult = analyzeCSV(csv);
+                displayResults(analysisResult);
             };
 
-            reader.readAsText(fileInput.files[0]);
+            reader.readAsText(file);
+        });
+
+        function analyzeCSV(csv) {
+            // Parse CSV lines into array of objects
+            const lines = csv.split('\n').slice(1); // Remove header line
+            const data = lines.map(line => {
+                const [mprn, meterSerialNumber, readValue, readType, readDateTime] = line.split(',');
+                return { mprn, meterSerialNumber, readValue: parseFloat(readValue), readDateTime: new Date(readDateTime) };
+            });
+
+            // Calculate average daily usage
+            const dailyUsage = {};
+            data.forEach(entry => {
+                const date = entry.readDateTime.toLocaleDateString(); // Display date in human-readable format
+                if (!dailyUsage[date]) {
+                    dailyUsage[date] = 0;
+                }
+
+                const readValue = parseFloat(entry.readValue); // Attempt to convert readValue to number
+                if (!isNaN(readValue)) { // Check if conversion was successful
+                    dailyUsage[date] += readValue;
+                }
+            });
+
+            // Find date with highest and lowest consumption
+            let maxDate = null;
+            let minDate = null;
+            let maxUsage = -Infinity;
+            let minUsage = Infinity;
+            for (const date in dailyUsage) {
+                const usage = dailyUsage[date];
+                if (usage > maxUsage) {
+                    maxUsage = usage;
+                    maxDate = date;
+                }
+                if (usage < minUsage) {
+                    minUsage = usage;
+                    minDate = date;
+                }
+            }
+
+            // Handle empty dailyUsage scenario (e.g., display a message)
+            if (Object.keys(dailyUsage).length === 0) {
+                return { averageDailyUsage: null, maxDate: null, maxUsage: null, minDate: null, minUsage: null };
+            }
+
+            const totalDays = Object.keys(dailyUsage).length;
+            const averageDailyUsage = Object.values(dailyUsage).reduce((acc, curr) => acc + curr, 0) / totalDays;
+
+            return { averageDailyUsage, maxDate, maxUsage, minDate, minUsage };
+        }
+
+        function displayResults(analysisResult) {
+            const resultsContainer = document.getElementById('results-container');
+            if (analysisResult.averageDailyUsage === null) {
+                resultsContainer.innerHTML = `<p>No valid data found in the uploaded CSV file.</p>`;
+            } else {
+                resultsContainer.innerHTML = `
+                    <h2>Analysis Results</h2>
+                    <p>Average Daily Usage: ${analysisResult.averageDailyUsage.toFixed(2)} kWh</p>
+                    <p>Date with Highest Consumption: ${analysisResult.maxDate} (${analysisResult.maxUsage.toFixed(2)} kWh)</p>
+                    <p>Date with Lowest Consumption: ${analysisResult.minDate} (${analysisResult.minUsage.toFixed(2)} kWh)</p>
+                `;
+            }
         }
     </script>
 </body>
